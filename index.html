@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connect 4 vs Бот</title>
+<style>
+  body { font-family: Arial, sans-serif; text-align: center; background: #f0f0f0; }
+  h1 { margin-top: 20px; }
+  #game { display: grid; grid-template-columns: repeat(7, 60px); grid-gap: 10px; justify-content: center; margin-top: 20px; }
+  .cell { width: 60px; height: 60px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.3); cursor: pointer; transition: background 0.3s; }
+  .red { background: #ff4d4d; }
+  .yellow { background: #3b73ff; }
+  #status { margin-top: 20px; font-size: 18px; }
+</style>
+</head>
+<body>
+
+<h1>🔴🟡 Connect 4 vs Бот</h1>
+<div id="game"></div>
+<div id="status">Ход: 🔴 (Игрок)</div>
+
+<script>
+const ROWS = 6;
+const COLS = 7;
+let board = Array.from({length: ROWS}, () => Array(COLS).fill(null));
+let currentPlayer = 'red'; // Игрок всегда красный
+const gameDiv = document.getElementById('game');
+const statusDiv = document.getElementById('status');
+
+function createBoard() {
+  gameDiv.innerHTML = '';
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const cell = document.createElement('div');
+      cell.classList.add('cell');
+      cell.dataset.row = r;
+      cell.dataset.col = c;
+      cell.addEventListener('click', handleClick);
+      gameDiv.appendChild(cell);
+    }
+  }
+}
+
+function handleClick(e) {
+  if (currentPlayer !== 'red') return; // Только игрок делает ход
+  const col = parseInt(e.currentTarget.dataset.col);
+  if (makeMove(col)) {
+    if (!checkWinLastMove()) {
+      currentPlayer = 'yellow';
+      statusDiv.textContent = 'Ход: 🟡 (Бот)';
+      setTimeout(botMove, 500); // бот ходит через полсекунды
+    }
+  }
+}
+
+function makeMove(col) {
+  for (let r = ROWS - 1; r >= 0; r--) {
+    if (!board[r][col]) {
+      board[r][col] = currentPlayer;
+      const cell = document.querySelector(`.cell[data-row='${r}'][data-col='${col}']`);
+      cell.classList.add(currentPlayer);
+      if (checkWin(r, col)) {
+        statusDiv.textContent = `Победил: ${currentPlayer === 'red' ? '🔴 Игрок' : '🟡 Бот'}`;
+        gameDiv.querySelectorAll('.cell').forEach(c => c.removeEventListener('click', handleClick));
+      }
+      return true;
+    }
+  }
+  return false; // колонка полная
+}
+
+function botMove() {
+  let availableCols = [];
+  for (let c = 0; c < COLS; c++) {
+    if (board[0][c] === null) availableCols.push(c);
+  }
+  const col = availableCols[Math.floor(Math.random() * availableCols.length)];
+  currentPlayer = 'yellow';
+  makeMove(col);
+  if (!checkWinLastMove()) {
+    currentPlayer = 'red';
+    statusDiv.textContent = 'Ход: 🔴 (Игрок)';
+  }
+}
+
+function checkWinLastMove() {
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (board[r][c] === currentPlayer && checkWin(r,c)) return true;
+    }
+  }
+  return false;
+}
+
+function checkWin(r, c) {
+  const directions = [
+    [[0,1],[0,-1]],
+    [[1,0],[-1,0]],
+    [[1,1],[-1,-1]],
+    [[1,-1],[-1,1]]
+  ];
+
+  for (let dir of directions) {
+    let count = 1;
+    for (let [dr, dc] of dir) {
+      let nr = r + dr, nc = c + dc;
+      while (nr >=0 && nr < ROWS && nc >=0 && nc < COLS && board[nr][nc] === currentPlayer) {
+        count++;
+        nr += dr;
+        nc += dc;
+      }
+    }
+    if (count >= 4) return true;
+  }
+  return false;
+}
+
+createBoard();
+</script>
+
+</body>
+</html>
