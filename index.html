@@ -5,13 +5,50 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Connect 4 vs Бот</title>
 <style>
-  body { font-family: Arial, sans-serif; text-align: center; background: #f0f0f0; }
-  h1 { margin-top: 20px; }
-  #game { display: grid; grid-template-columns: repeat(7, 60px); grid-gap: 10px; justify-content: center; margin-top: 20px; }
-  .cell { width: 60px; height: 60px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.3); cursor: pointer; transition: background 0.3s; }
+  body { 
+    font-family: Arial, sans-serif; 
+    text-align: center; 
+    background: #003d99; 
+    color: white;
+    margin: 0; 
+    padding: 0;
+  }
+  h1 { margin-top: 20px; font-size: 28px; }
+  #game {
+    display: grid; 
+    grid-template-columns: repeat(7, 12vw); 
+    grid-gap: 2vw; 
+    justify-content: center; 
+    margin: 5vw auto;
+    max-width: 95vw;
+  }
+  .cell { 
+    width: 12vw; 
+    height: 12vw; 
+    max-width: 60px; 
+    max-height: 60px;
+    background: #fff; 
+    border-radius: 50%; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3); 
+    cursor: pointer; 
+    transition: background 0.3s; 
+  }
   .red { background: #ff4d4d; }
-  .yellow { background: #3b73ff; }
-  #status { margin-top: 20px; font-size: 18px; }
+  .yellow { background: #ffeb3b; }
+  #status { margin-top: 20px; font-size: 20px; }
+  #restart { 
+    margin-top: 20px; 
+    padding: 15px 25px; 
+    font-size: 18px; 
+    border: none; 
+    border-radius: 10px; 
+    background: #ffffff; 
+    color: #003d99; 
+    cursor: pointer; 
+  }
 </style>
 </head>
 <body>
@@ -19,6 +56,7 @@
 <h1>🔴🟡 Connect 4 vs Бот</h1>
 <div id="game"></div>
 <div id="status">Ход: 🔴 (Игрок)</div>
+<button id="restart" onclick="restartGame()">Начать заново</button>
 
 <script>
 const ROWS = 6;
@@ -28,6 +66,7 @@ let currentPlayer = 'red'; // Игрок всегда красный
 const gameDiv = document.getElementById('game');
 const statusDiv = document.getElementById('status');
 
+// ===== Создание игрового поля =====
 function createBoard() {
   gameDiv.innerHTML = '';
   for (let r = 0; r < ROWS; r++) {
@@ -42,18 +81,27 @@ function createBoard() {
   }
 }
 
+function restartGame() {
+  board = Array.from({length: ROWS}, () => Array(COLS).fill(null));
+  currentPlayer = 'red';
+  statusDiv.textContent = 'Ход: 🔴 (Игрок)';
+  createBoard();
+}
+
+// ===== Ход игрока =====
 function handleClick(e) {
-  if (currentPlayer !== 'red') return; // Только игрок делает ход
+  if (currentPlayer !== 'red') return; 
   const col = parseInt(e.currentTarget.dataset.col);
   if (makeMove(col)) {
     if (!checkWinLastMove()) {
       currentPlayer = 'yellow';
       statusDiv.textContent = 'Ход: 🟡 (Бот)';
-      setTimeout(botMove, 500); // бот ходит через полсекунды
+      setTimeout(botMove, 500);
     }
   }
 }
 
+// ===== Ход (игрок или бот) =====
 function makeMove(col) {
   for (let r = ROWS - 1; r >= 0; r--) {
     if (!board[r][col]) {
@@ -67,15 +115,23 @@ function makeMove(col) {
       return true;
     }
   }
-  return false; // колонка полная
+  return false;
 }
 
+// ===== Умный бот =====
 function botMove() {
-  let availableCols = [];
-  for (let c = 0; c < COLS; c++) {
-    if (board[0][c] === null) availableCols.push(c);
+  // Сначала попробуем выиграть
+  let col = findBestMove('yellow');
+  if (col === null) {
+    // Блокируем игрока
+    col = findBestMove('red');
   }
-  const col = availableCols[Math.floor(Math.random() * availableCols.length)];
+  if (col === null) {
+    // Случайный ход
+    let availableCols = [];
+    for (let c = 0; c < COLS; c++) if (board[0][c] === null) availableCols.push(c);
+    col = availableCols[Math.floor(Math.random() * availableCols.length)];
+  }
   currentPlayer = 'yellow';
   makeMove(col);
   if (!checkWinLastMove()) {
@@ -84,6 +140,25 @@ function botMove() {
   }
 }
 
+// Проверка потенциального выигрыша
+function findBestMove(player) {
+  for (let c = 0; c < COLS; c++) {
+    for (let r = ROWS - 1; r >= 0; r--) {
+      if (!board[r][c]) {
+        board[r][c] = player;
+        if (checkWin(r, c)) {
+          board[r][c] = null;
+          return c;
+        }
+        board[r][c] = null;
+        break;
+      }
+    }
+  }
+  return null;
+}
+
+// ===== Проверка победы =====
 function checkWinLastMove() {
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
@@ -116,6 +191,7 @@ function checkWin(r, c) {
   return false;
 }
 
+// ===== Инициализация =====
 createBoard();
 </script>
 
